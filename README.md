@@ -12,6 +12,14 @@ Batch-create [Google NotebookLM](https://notebooklm.google.com/) notebooks from 
 - **Web UI & CLI** — Intuitive browser UI with real-time progress, or use the command line
 - **Bulk import** — Load URLs from CSV or TXT files
 
+## Screenshots
+
+### Input — Enter YouTube URLs or upload a CSV file
+![Input UI](docs/screenshot-input.png)
+
+### Results — Real-time progress and summary table
+![Results](docs/screenshot-results.png)
+
 ## Quick Start
 
 ### Prerequisites
