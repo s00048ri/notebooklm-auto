@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -388,29 +388,29 @@
     <div class="card">
       <div class="card-title">YouTube URLs</div>
       <div class="input-area">
-        <textarea id="urlInput" placeholder="YouTube URLを1行ずつ入力&#10;&#10;例:&#10;https://youtube.com/live/FPkQVpeBSZo&#10;セッション名, https://youtube.com/live/uPYN9MmBDg0&#10;&#10;CSVファイルのドラッグ&ドロップにも対応しています"></textarea>
+        <textarea id="urlInput" placeholder="Enter YouTube URLs, one per line&#10;&#10;Examples:&#10;https://youtube.com/live/FPkQVpeBSZo&#10;Session Title, https://youtube.com/live/uPYN9MmBDg0&#10;&#10;You can also drag &amp; drop a CSV file"></textarea>
 
         <div class="upload-zone" id="uploadZone">
-          <div>CSV / TXT ファイルをドロップ、またはクリックして選択</div>
+          <div>Drop a CSV / TXT file here, or click to browse</div>
           <input type="file" id="fileInput" accept=".csv,.txt">
         </div>
 
         <div class="controls">
           <div class="control-group">
-            <label>要約の言語</label>
+            <label>Summary Language</label>
             <select id="langSelect">
-              <option value="ja">日本語</option>
               <option value="en">English</option>
-              <option value="custom">カスタム</option>
+              <option value="ja">Japanese</option>
+              <option value="custom">Custom</option>
             </select>
           </div>
           <div class="control-group" id="customPromptGroup" style="display:none; flex:1;">
-            <label>カスタムプロンプト</label>
-            <input type="text" id="customPrompt" placeholder="要約のプロンプトを入力...">
+            <label>Custom Prompt</label>
+            <input type="text" id="customPrompt" placeholder="Enter your summary prompt...">
           </div>
           <div style="flex:1;"></div>
           <button class="btn btn-primary" id="startBtn" onclick="startJob()">
-            実行する
+            Run
           </button>
         </div>
       </div>
@@ -418,11 +418,11 @@
 
     <!-- Progress -->
     <div class="card progress-section" id="progressSection">
-      <div class="card-title">処理状況</div>
+      <div class="card-title">Progress</div>
       <div class="progress-bar-wrap">
         <div class="progress-bar" id="progressBar"></div>
       </div>
-      <div class="progress-text" id="progressText">準備中...</div>
+      <div class="progress-text" id="progressText">Preparing...</div>
       <div class="activity-log" id="activityLog"></div>
     </div>
 
@@ -431,8 +431,8 @@
       <div class="results-header">
         <div class="stats" id="statsBar"></div>
         <div class="export-btns">
-          <button class="btn btn-secondary btn-sm" onclick="exportCSV()">CSV出力</button>
-          <button class="btn btn-secondary btn-sm" onclick="copyTable()">クリップボードにコピー</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="copyTable()">Copy to Clipboard</button>
         </div>
       </div>
       <div style="overflow-x: auto;">
@@ -440,11 +440,11 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>タイトル</th>
-              <th>ステータス</th>
-              <th>要約</th>
-              <th>共有リンク</th>
-              <th>時間</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Summary</th>
+              <th>Share Link</th>
+              <th>Time</th>
             </tr>
           </thead>
           <tbody id="resultsBody"></tbody>
@@ -459,7 +459,7 @@
       <h3 id="modalTitle"></h3>
       <div class="modal-body" id="modalBody"></div>
       <div class="modal-close">
-        <button class="btn btn-secondary btn-sm" onclick="closeSummaryModal()">閉じる</button>
+        <button class="btn btn-secondary btn-sm" onclick="closeSummaryModal()">Close</button>
       </div>
     </div>
   </div>
@@ -516,16 +516,16 @@
           return;
         }
         urlInput.value = data.text;
-        uploadZone.innerHTML = `<div>${file.name} (${data.count} 件のURL)</div>`;
+        uploadZone.innerHTML = `<div>${file.name} (${data.count} URLs)</div>`;
       } catch (err) {
-        alert('ファイルの読み込みに失敗しました: ' + err.message);
+        alert('Failed to load file: ' + err.message);
       }
     }
 
     const STEP_LABELS = {
-      creating: 'ノートブック作成中',
-      adding_source: 'ソース追加中',
-      summarizing: '要約生成中',
+      creating: 'Creating notebook',
+      adding_source: 'Adding source',
+      summarizing: 'Generating summary',
     };
 
     function addLog(html) {
@@ -546,7 +546,7 @@
         tr.innerHTML = `
           <td>${i + 1}</td>
           <td class="title-cell">${entry.title || '-'}</td>
-          <td><span class="status-badge processing">待機中</span></td>
+          <td><span class="status-badge processing">Queued</span></td>
           <td class="summary-cell">-</td>
           <td>-</td>
           <td>-</td>
@@ -560,7 +560,7 @@
       if (!row) return;
 
       const statusClass = data.status === 'success' ? 'success' : 'error';
-      const statusLabel = data.status === 'success' ? '成功' : '失敗';
+      const statusLabel = data.status === 'success' ? 'Success' : 'Failed';
       const summaryShort = data.summary ? data.summary.substring(0, 120) + (data.summary.length > 120 ? '...' : '') : (data.error || '-');
 
       row.innerHTML = `
@@ -568,7 +568,7 @@
         <td class="title-cell">${data.title || '-'}</td>
         <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
         <td class="summary-cell" onclick="showSummary(${data.index})">${summaryShort}</td>
-        <td>${data.share_link ? `<a href="${data.share_link}" target="_blank">開く</a>` : '-'}</td>
+        <td>${data.share_link ? `<a href="${data.share_link}" target="_blank">Open</a>` : '-'}</td>
         <td>${data.time}s</td>
       `;
 
@@ -578,18 +578,18 @@
     function updateProgress() {
       const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
       progressBar.style.width = pct + '%';
-      progressText.textContent = `${doneCount} / ${totalCount} 完了 (${pct}%)`;
+      progressText.textContent = `${doneCount} / ${totalCount} completed (${pct}%)`;
     }
 
     async function startJob() {
       const urls = urlInput.value.trim();
       if (!urls) {
-        alert('URLを入力してください');
+        alert('Please enter URLs');
         return;
       }
 
       startBtn.disabled = true;
-      startBtn.textContent = '処理中...';
+      startBtn.textContent = 'Processing...';
       progressSection.classList.add('active');
       resultsSection.classList.add('active');
       activityLog.innerHTML = '';
@@ -609,14 +609,14 @@
         if (data.error) {
           alert(data.error);
           startBtn.disabled = false;
-          startBtn.textContent = '実行する';
+          startBtn.textContent = 'Run';
           return;
         }
 
         totalCount = data.total;
         initResultsTable(data.entries);
         updateProgress();
-        addLog(`<span class="step">開始:</span> ${totalCount} 件を処理します`);
+        addLog(`<span class="step">Starting:</span> Processing ${totalCount} URLs`);
 
         // SSE
         const evtSource = new EventSource(`/api/stream/${data.job_id}`);
@@ -640,45 +640,45 @@
           updateProgress();
           updateRow(d);
           if (d.status === 'success') {
-            addLog(`<span class="ok">[完了]</span> ${d.title}`);
+            addLog(`<span class="ok">[Done]</span> ${d.title}`);
           } else {
-            addLog(`<span class="err">[エラー]</span> ${d.title}: ${d.error}`);
+            addLog(`<span class="err">[Error]</span> ${d.title}: ${d.error}`);
           }
         });
 
         evtSource.addEventListener('done', (e) => {
           const d = JSON.parse(e.data);
           evtSource.close();
-          addLog(`<span class="ok">全て完了!</span> 成功: ${d.successful}, 失敗: ${d.failed}`);
+          addLog(`<span class="ok">All done!</span> Success: ${d.successful}, Failed: ${d.failed}`);
           progressBar.style.width = '100%';
-          progressText.textContent = `完了! ${d.successful}/${d.total} 成功`;
+          progressText.textContent = `Done! ${d.successful}/${d.total} succeeded`;
           startBtn.disabled = false;
-          startBtn.textContent = '実行する';
+          startBtn.textContent = 'Run';
           updateStats(d);
         });
 
         evtSource.addEventListener('error', (e) => {
           if (e.data) {
             const d = JSON.parse(e.data);
-            addLog(`<span class="err">エラー:</span> ${d.message}`);
+            addLog(`<span class="err">Error:</span> ${d.message}`);
           }
           evtSource.close();
           startBtn.disabled = false;
-          startBtn.textContent = '実行する';
+          startBtn.textContent = 'Run';
         });
 
       } catch (err) {
-        alert('エラーが発生しました: ' + err.message);
+        alert('An error occurred: ' + err.message);
         startBtn.disabled = false;
-        startBtn.textContent = '実行する';
+        startBtn.textContent = 'Run';
       }
     }
 
     function updateStats(data) {
       statsBar.innerHTML = `
-        <div class="stat"><div class="stat-dot success"></div>${data.successful} 成功</div>
-        <div class="stat"><div class="stat-dot error"></div>${data.failed} 失敗</div>
-        <div class="stat">合計: ${data.total}</div>
+        <div class="stat"><div class="stat-dot success"></div>${data.successful} Success</div>
+        <div class="stat"><div class="stat-dot error"></div>${data.failed} Failed</div>
+        <div class="stat">Total: ${data.total}</div>
       `;
     }
 
@@ -702,12 +702,12 @@
 
     function exportCSV() {
       if (!results.length) return;
-      const header = ['#', 'タイトル', 'URL', 'ステータス', '要約', '共有リンク', '時間(秒)'];
+      const header = ['#', 'Title', 'URL', 'Status', 'Summary', 'Share Link', 'Time(s)'];
       const rows = results.map((r, i) => [
         i + 1,
         `"${(r.title || '').replace(/"/g, '""')}"`,
         r.url,
-        r.status === 'success' ? '成功' : '失敗',
+        r.status === 'success' ? 'Success' : 'Failed',
         `"${(r.summary || '').replace(/"/g, '""')}"`,
         r.share_link || '',
         r.time || '',
@@ -724,19 +724,19 @@
 
     function copyTable() {
       if (!results.length) return;
-      const header = ['#', 'タイトル', 'URL', 'ステータス', '要約', '共有リンク', '時間(秒)'];
+      const header = ['#', 'Title', 'URL', 'Status', 'Summary', 'Share Link', 'Time(s)'];
       const rows = results.map((r, i) => [
         i + 1,
         r.title || '',
         r.url,
-        r.status === 'success' ? '成功' : '失敗',
+        r.status === 'success' ? 'Success' : 'Failed',
         r.summary || '',
         r.share_link || '',
         r.time || '',
       ]);
       const tsv = [header.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
       navigator.clipboard.writeText(tsv).then(() => {
-        alert('クリップボードにコピーしました（スプレッドシートに貼り付けできます）');
+        alert('Copied to clipboard (paste into a spreadsheet)');
       });
     }
 
