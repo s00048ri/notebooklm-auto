@@ -1,10 +1,177 @@
 # NotebookLM Auto
 
-YouTubeのURLリストからNotebookLMノートブックを自動作成し、要約と共有リンクを一括生成するツールです。
-
-> **Automatically create NotebookLM notebooks from YouTube URLs, generate summaries, and get shareable links — all in batch.**
+Batch-create [Google NotebookLM](https://notebooklm.google.com/) notebooks from YouTube URLs, automatically generate summaries, and get shareable links — all at once.
 
 ## Features
+
+- **Batch processing** — Pass a list of YouTube URLs and get NotebookLM notebooks created automatically
+- **Auto-titling** — Fetches YouTube video titles and uses them as notebook names
+- **AI summaries** — Generates summaries in any language (Japanese, English, or custom prompts)
+- **Shareable links** — Retrieves a shareable link for each notebook
+- **Flexible output** — Export results as CSV, JSON, or Markdown
+- **Web UI & CLI** — Intuitive browser UI with real-time progress, or use the command line
+- **Bulk import** — Load URLs from CSV or TXT files
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- A Google account with access to [NotebookLM](https://notebooklm.google.com/)
+
+### Installation
+
+```bash
+git clone https://github.com/s00048ri/notebooklm-auto.git
+cd notebooklm-auto
+
+# Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -e "."
+
+# Install Flask for the Web UI (optional)
+pip install flask
+
+# Install Playwright browser
+playwright install chromium
+```
+
+### Login to NotebookLM
+
+On first use, authenticate with your Google account:
+
+```bash
+notebooklm login
+```
+
+A browser window will open — sign in with your Google account. Session credentials are stored locally.
+
+### Usage
+
+#### Web UI (Recommended)
+
+```bash
+python -m notebooklm_auto.web
+```
+
+Open `http://localhost:5000` in your browser. From there you can:
+
+- Enter YouTube URLs (one per line) or drag & drop a CSV file
+- Choose summary language (Japanese / English / Custom prompt)
+- Watch real-time processing progress
+- Export results as CSV or copy to clipboard
+
+#### CLI
+
+```bash
+# Process URLs from a file
+notebooklm-auto --file urls.csv
+
+# Pass URLs directly
+notebooklm-auto --urls https://youtube.com/watch?v=xxx https://youtube.com/watch?v=yyy
+
+# Summarize in English
+notebooklm-auto --file urls.csv --prompt "Summarize the key points in English"
+
+# Specify output format
+notebooklm-auto --file urls.csv --output-format csv
+```
+
+## Input Formats
+
+### Plain text (urls.txt)
+
+```
+https://youtube.com/watch?v=xxxxx
+https://youtube.com/watch?v=yyyyy
+```
+
+### CSV (urls.csv)
+
+```csv
+Session Title,YouTube URL
+My First Session,https://youtube.com/watch?v=xxxxx
+My Second Session,https://youtube.com/watch?v=yyyyy
+```
+
+If a `Session Title` / `Title` / `Name` column is present, it will be used as the notebook name. Otherwise, the YouTube video title is fetched automatically.
+
+## Configuration
+
+Customize settings in `config.yaml`:
+
+```yaml
+# Summary prompt (can be overridden with --prompt flag)
+summary_prompt: "Summarize the key points of this video"
+
+# Max concurrent notebooks (keep low to avoid rate limits)
+max_concurrent: 2
+
+# Output format: json / csv / markdown
+output_format: csv
+
+# Output directory
+output_dir: ./output
+```
+
+## How It Works
+
+1. Reads a list of YouTube URLs
+2. For each URL:
+   - Fetches the video title via the YouTube oEmbed API (no API key needed)
+   - Creates a NotebookLM notebook via browser automation (Playwright)
+   - Adds the YouTube video as a source
+   - Asks the AI to generate a summary based on your prompt
+   - Retrieves the shareable notebook link
+3. Outputs results as CSV / JSON / Markdown
+
+Powered by [`notebooklm-py`](https://github.com/nichochar/notebooklm-py) and [Playwright](https://playwright.dev/).
+
+## Project Structure
+
+```
+notebooklm-auto/
+├── src/notebooklm_auto/
+│   ├── __init__.py
+│   ├── __main__.py        # python -m entry point
+│   ├── main.py            # CLI entry point
+│   ├── web.py             # Web UI server (Flask + SSE)
+│   ├── config.py          # Configuration management
+│   ├── input_parser.py    # URL input parser (CSV/TXT)
+│   ├── processor.py       # NotebookLM automation core
+│   ├── output_writer.py   # Result output (JSON/CSV/Markdown)
+│   ├── models.py          # Data models
+│   ├── templates/
+│   │   └── index.html     # Web UI template
+│   └── static/            # Static assets
+├── config.yaml            # Default configuration
+├── pyproject.toml
+└── README.md
+```
+
+## Notes
+
+- NotebookLM does not have a public API — this tool uses browser automation via Playwright
+- If your session expires, re-run `notebooklm login`
+- Increasing `max_concurrent` above 3 may trigger rate limits (default: 2 is recommended)
+
+## License
+
+MIT
+
+---
+
+# 日本語ドキュメント
+
+## 概要
+
+YouTubeのURLリストからGoogle NotebookLMノートブックを自動作成し、要約と共有リンクを一括生成するツールです。
+
+## 主な機能
 
 - YouTube URLのリストを入力するだけで、NotebookLMノートブックを自動作成
 - 動画タイトルを自動取得してノートブック名に設定
@@ -12,13 +179,45 @@ YouTubeのURLリストからNotebookLMノートブックを自動作成し、要
 - 共有リンクを自動取得
 - CSV/JSON/Markdown形式で結果を出力
 - Web UI（リアルタイム進捗表示付き）とCLIの両方に対応
-- CSV/TXTファイルからの一括読み込み
 
-## Demo
+## セットアップ
 
-### Web UI
+### 1. インストール
 
+```bash
+git clone https://github.com/s00048ri/notebooklm-auto.git
+cd notebooklm-auto
+
+# 仮想環境を作成
+python -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows
+
+# 依存関係をインストール
+pip install -e "."
+
+# Web UIを使う場合はFlaskもインストール
+pip install flask
+
+# Playwrightのブラウザをインストール
+playwright install chromium
 ```
+
+### 2. NotebookLMへのログイン
+
+初回のみ、以下のコマンドでGoogleアカウントにログインします：
+
+```bash
+notebooklm login
+```
+
+ブラウザが開くので、Googleアカウントでログインしてください。セッション情報がローカルに保存されます。
+
+### 3. 使い方
+
+#### Web UI（おすすめ）
+
+```bash
 python -m notebooklm_auto.web
 ```
 
@@ -29,7 +228,7 @@ python -m notebooklm_auto.web
 - リアルタイムの処理進捗表示
 - 結果のCSVエクスポート・クリップボードコピー
 
-### CLI
+#### CLI
 
 ```bash
 # URLリストファイルから実行
@@ -45,45 +244,7 @@ notebooklm-auto --file urls.csv --prompt "Summarize the key points in English"
 notebooklm-auto --file urls.csv --output-format csv
 ```
 
-## Setup
-
-### 1. 前提条件
-
-- Python 3.10以上
-- Google アカウント（NotebookLMにアクセスできるもの）
-
-### 2. インストール
-
-```bash
-git clone https://github.com/YOUR_USERNAME/notebooklm-auto.git
-cd notebooklm-auto
-
-# 仮想環境を作成
-python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate   # Windows
-
-# 依存関係をインストール
-pip install -e "."
-
-# Flaskもインストール（Web UIを使う場合）
-pip install flask
-
-# Playwrightのブラウザをインストール
-playwright install chromium
-```
-
-### 3. NotebookLMへのログイン
-
-初回のみ、以下のコマンドでGoogleアカウントにログインします：
-
-```bash
-notebooklm login
-```
-
-ブラウザが開くので、Googleアカウントでログインしてください。セッション情報がローカルに保存されます。
-
-### 4. 入力ファイルの準備
+### 4. 入力ファイルの形式
 
 #### テキストファイル（urls.txt）
 
@@ -100,78 +261,10 @@ Session Title,YouTube URL
 セッション名2,https://youtube.com/watch?v=yyyyy
 ```
 
-CSVの場合、`Session Title` / `Title` / `Name` 列があればノートブック名に使用します。
-列がない場合はYouTube動画のタイトルを自動取得します。
+CSVに `Session Title` / `Title` / `Name` 列があればノートブック名に使用します。列がない場合はYouTube動画のタイトルを自動取得します。
 
-### 5. 実行
+## 注意事項
 
-```bash
-# CLI
-notebooklm-auto --file input/urls.csv --output-format csv
-
-# Web UI
-python -m notebooklm_auto.web
-```
-
-## Configuration
-
-`config.yaml` で設定をカスタマイズできます：
-
-```yaml
-# 要約プロンプト
-summary_prompt: "この動画の要点を日本語で要約してください"
-
-# 同時処理数（NotebookLMのレート制限回避のため低めに設定）
-max_concurrent: 2
-
-# 出力形式: json / csv / markdown
-output_format: csv
-
-# 出力ディレクトリ
-output_dir: ./output
-```
-
-## Project Structure
-
-```
-notebooklm-auto/
-├── src/notebooklm_auto/
-│   ├── __init__.py
-│   ├── __main__.py        # python -m エントリポイント
-│   ├── main.py            # CLIエントリポイント
-│   ├── web.py             # Web UIサーバー（Flask + SSE）
-│   ├── config.py          # 設定管理
-│   ├── input_parser.py    # URL入力パーサー（CSV/TXT対応）
-│   ├── processor.py       # NotebookLM操作コア
-│   ├── output_writer.py   # 結果出力（JSON/CSV/Markdown）
-│   ├── models.py          # データモデル
-│   ├── templates/
-│   │   └── index.html     # Web UIテンプレート
-│   └── static/            # 静的ファイル
-├── config.yaml            # デフォルト設定
-├── pyproject.toml
-└── README.md
-```
-
-## How It Works
-
-1. YouTube URLリストを読み込み
-2. 各URLに対して：
-   - YouTube oEmbed APIで動画タイトルを取得
-   - NotebookLMにノートブックを作成
-   - YouTubeソースを追加
-   - プロンプトに基づいて要約を生成
-   - 共有リンクを取得
-3. 結果をCSV/JSON/Markdownで出力
-
-内部では [`notebooklm-py`](https://github.com/nichochar/notebooklm-py) ライブラリを使用し、Playwrightでブラウザ自動操作を行っています。
-
-## Notes
-
-- NotebookLMにはAPIが公開されていないため、ブラウザ自動操作で動作します
+- NotebookLMには公式APIが存在しないため、Playwrightによるブラウザ自動操作で動作します
 - セッションが切れた場合は `notebooklm login` で再ログインしてください
 - 同時処理数を上げすぎるとレート制限に引っかかる可能性があります（推奨: 2〜3）
-
-## License
-
-MIT
