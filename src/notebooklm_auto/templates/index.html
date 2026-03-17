@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotebookLM Auto</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242734;
+      --border: #2e3244;
+      --text: #e4e4e7;
+      --text2: #a1a1aa;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .header h1 span {
+      color: var(--text2);
+      font-weight: 400;
+      font-size: 16px;
+      margin-left: 8px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    /* Input area */
+    .input-area {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    textarea::placeholder { color: #555; }
+
+    /* Controls row */
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-group label {
+      font-size: 12px;
+      color: var(--text2);
+      font-weight: 500;
+    }
+    select, input[type="text"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 14px;
+      min-width: 160px;
+    }
+    select:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12px;
+    }
+
+    /* File upload */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 14px;
+    }
+    .upload-zone:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+    }
+    .upload-zone input { display: none; }
+
+    /* Progress */
+    .progress-section { display: none; }
+    .progress-section.active { display: block; }
+
+    .progress-bar-wrap {
+      background: var(--surface2);
+      border-radius: 8px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #a855f7);
+      border-radius: 8px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-text {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 16px;
+    }
+
+    /* Activity log */
+    .activity-log {
+      max-height: 180px;
+      overflow-y: auto;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    .log-entry { color: var(--text2); }
+    .log-entry .step { color: var(--accent); }
+    .log-entry .ok { color: var(--green); }
+    .log-entry .err { color: var(--red); }
+
+    /* Results table */
+    .results-section { display: none; }
+    .results-section.active { display: block; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .stats {
+      display: flex;
+      gap: 16px;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+    .stat-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .stat-dot.success { background: var(--green); }
+    .stat-dot.error { background: var(--red); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    td {
+      padding: 12px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: rgba(99, 102, 241, 0.03); }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-badge.success {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--green);
+    }
+    .status-badge.error {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--red);
+    }
+    .status-badge.processing {
+      background: rgba(234, 179, 8, 0.15);
+      color: var(--yellow);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+
+    .summary-cell {
+      max-width: 400px;
+      max-height: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      line-height: 1.5;
+      color: var(--text2);
+    }
+    .summary-cell:hover { color: var(--text); }
+    .summary-cell.expanded {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .title-cell { max-width: 200px; font-weight: 500; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal h3 {
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+    .modal-body {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text2);
+      white-space: pre-wrap;
+    }
+    .modal-close {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    /* Export buttons */
+    .export-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .controls { flex-direction: column; align-items: stretch; }
+      .results-header { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-icon">N</div>
+      <h1>NotebookLM Auto <span>YouTube Summary Tool</span></h1>
+    </div>
+
+    <!-- Input -->
+    <div class="card">
+      <div class="card-title">YouTube URLs</div>
+      <div class="input-area">
+        <textarea id="urlInput" placeholder="YouTube URLを1行ずつ入力&#10;&#10;例:&#10;https://youtube.com/live/FPkQVpeBSZo&#10;セッション名, https://youtube.com/live/uPYN9MmBDg0&#10;&#10;CSVファイルのドラッグ&ドロップにも対応しています"></textarea>
+
+        <div class="upload-zone" id="uploadZone">
+          <div>CSV / TXT ファイルをドロップ、またはクリックして選択</div>
+          <input type="file" id="fileInput" accept=".csv,.txt">
+        </div>
+
+        <div class="controls">
+          <div class="control-group">
+            <label>要約の言語</label>
+            <select id="langSelect">
+              <option value="ja">日本語</option>
+              <option value="en">English</option>
+              <option value="custom">カスタム</option>
+            </select>
+          </div>
+          <div class="control-group" id="customPromptGroup" style="display:none; flex:1;">
+            <label>カスタムプロンプト</label>
+            <input type="text" id="customPrompt" placeholder="要約のプロンプトを入力...">
+          </div>
+          <div style="flex:1;"></div>
+          <button class="btn btn-primary" id="startBtn" onclick="startJob()">
+            実行する
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card progress-section" id="progressSection">
+      <div class="card-title">処理状況</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">準備中...</div>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="card results-section" id="resultsSection">
+      <div class="results-header">
+        <div class="stats" id="statsBar"></div>
+        <div class="export-btns">
+          <button class="btn btn-secondary btn-sm" onclick="exportCSV()">CSV出力</button>
+          <button class="btn btn-secondary btn-sm" onclick="copyTable()">クリップボードにコピー</button>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>タイトル</th>
+              <th>ステータス</th>
+              <th>要約</th>
+              <th>共有リンク</th>
+              <th>時間</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Modal -->
+  <div class="modal-overlay" id="summaryModal" onclick="closeModal(event)">
+    <div class="modal">
+      <h3 id="modalTitle"></h3>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-close">
+        <button class="btn btn-secondary btn-sm" onclick="closeSummaryModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById('urlInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const langSelect = document.getElementById('langSelect');
+    const customPromptGroup = document.getElementById('customPromptGroup');
+    const customPrompt = document.getElementById('customPrompt');
+    const startBtn = document.getElementById('startBtn');
+    const progressSection = document.getElementById('progressSection');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const activityLog = document.getElementById('activityLog');
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsBody = document.getElementById('resultsBody');
+    const statsBar = document.getElementById('statsBar');
+
+    let results = [];
+    let totalCount = 0;
+    let doneCount = 0;
+
+    // Lang select
+    langSelect.addEventListener('change', () => {
+      customPromptGroup.style.display = langSelect.value === 'custom' ? 'flex' : 'none';
+    });
+
+    // File upload
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    async function handleFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+        urlInput.value = data.text;
+        uploadZone.innerHTML = `<div>${file.name} (${data.count} 件のURL)</div>`;
+      } catch (err) {
+        alert('ファイルの読み込みに失敗しました: ' + err.message);
+      }
+    }
+
+    const STEP_LABELS = {
+      creating: 'ノートブック作成中',
+      adding_source: 'ソース追加中',
+      summarizing: '要約生成中',
+    };
+
+    function addLog(html) {
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = html;
+      activityLog.appendChild(div);
+      activityLog.scrollTop = activityLog.scrollHeight;
+    }
+
+    function initResultsTable(entries) {
+      resultsBody.innerHTML = '';
+      results = [];
+      entries.forEach((entry, i) => {
+        results.push({ index: i, ...entry, status: 'pending', summary: '', share_link: '', time: 0 });
+        const tr = document.createElement('tr');
+        tr.id = `row-${i}`;
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td class="title-cell">${entry.title || '-'}</td>
+          <td><span class="status-badge processing">待機中</span></td>
+          <td class="summary-cell">-</td>
+          <td>-</td>
+          <td>-</td>
+        `;
+        resultsBody.appendChild(tr);
+      });
+    }
+
+    function updateRow(data) {
+      const row = document.getElementById(`row-${data.index}`);
+      if (!row) return;
+
+      const statusClass = data.status === 'success' ? 'success' : 'error';
+      const statusLabel = data.status === 'success' ? '成功' : '失敗';
+      const summaryShort = data.summary ? data.summary.substring(0, 120) + (data.summary.length > 120 ? '...' : '') : (data.error || '-');
+
+      row.innerHTML = `
+        <td>${data.index + 1}</td>
+        <td class="title-cell">${data.title || '-'}</td>
+        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+        <td class="summary-cell" onclick="showSummary(${data.index})">${summaryShort}</td>
+        <td>${data.share_link ? `<a href="${data.share_link}" target="_blank">開く</a>` : '-'}</td>
+        <td>${data.time}s</td>
+      `;
+
+      results[data.index] = { ...results[data.index], ...data };
+    }
+
+    function updateProgress() {
+      const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+      progressBar.style.width = pct + '%';
+      progressText.textContent = `${doneCount} / ${totalCount} 完了 (${pct}%)`;
+    }
+
+    async function startJob() {
+      const urls = urlInput.value.trim();
+      if (!urls) {
+        alert('URLを入力してください');
+        return;
+      }
+
+      startBtn.disabled = true;
+      startBtn.textContent = '処理中...';
+      progressSection.classList.add('active');
+      resultsSection.classList.add('active');
+      activityLog.innerHTML = '';
+      doneCount = 0;
+
+      const prompt = langSelect.value === 'custom' ? customPrompt.value : '';
+      const lang = langSelect.value;
+
+      try {
+        const res = await fetch('/api/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls, prompt, lang }),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          alert(data.error);
+          startBtn.disabled = false;
+          startBtn.textContent = '実行する';
+          return;
+        }
+
+        totalCount = data.total;
+        initResultsTable(data.entries);
+        updateProgress();
+        addLog(`<span class="step">開始:</span> ${totalCount} 件を処理します`);
+
+        // SSE
+        const evtSource = new EventSource(`/api/stream/${data.job_id}`);
+
+        evtSource.addEventListener('progress', (e) => {
+          const d = JSON.parse(e.data);
+          const stepLabel = STEP_LABELS[d.step] || d.step;
+          addLog(`<span class="step">[${d.title}]</span> ${stepLabel}...`);
+
+          // Update row status to processing
+          const row = document.getElementById(`row-${d.index}`);
+          if (row) {
+            const statusCell = row.children[2];
+            statusCell.innerHTML = `<span class="status-badge processing">${stepLabel}</span>`;
+          }
+        });
+
+        evtSource.addEventListener('result', (e) => {
+          const d = JSON.parse(e.data);
+          doneCount++;
+          updateProgress();
+          updateRow(d);
+          if (d.status === 'success') {
+            addLog(`<span class="ok">[完了]</span> ${d.title}`);
+          } else {
+            addLog(`<span class="err">[エラー]</span> ${d.title}: ${d.error}`);
+          }
+        });
+
+        evtSource.addEventListener('done', (e) => {
+          const d = JSON.parse(e.data);
+          evtSource.close();
+          addLog(`<span class="ok">全て完了!</span> 成功: ${d.successful}, 失敗: ${d.failed}`);
+          progressBar.style.width = '100%';
+          progressText.textContent = `完了! ${d.successful}/${d.total} 成功`;
+          startBtn.disabled = false;
+          startBtn.textContent = '実行する';
+          updateStats(d);
+        });
+
+        evtSource.addEventListener('error', (e) => {
+          if (e.data) {
+            const d = JSON.parse(e.data);
+            addLog(`<span class="err">エラー:</span> ${d.message}`);
+          }
+          evtSource.close();
+          startBtn.disabled = false;
+          startBtn.textContent = '実行する';
+        });
+
+      } catch (err) {
+        alert('エラーが発生しました: ' + err.message);
+        startBtn.disabled = false;
+        startBtn.textContent = '実行する';
+      }
+    }
+
+    function updateStats(data) {
+      statsBar.innerHTML = `
+        <div class="stat"><div class="stat-dot success"></div>${data.successful} 成功</div>
+        <div class="stat"><div class="stat-dot error"></div>${data.failed} 失敗</div>
+        <div class="stat">合計: ${data.total}</div>
+      `;
+    }
+
+    function showSummary(index) {
+      const r = results[index];
+      if (!r || !r.summary) return;
+      document.getElementById('modalTitle').textContent = r.title || `#${index + 1}`;
+      document.getElementById('modalBody').textContent = r.summary;
+      document.getElementById('summaryModal').classList.add('active');
+    }
+
+    function closeModal(e) {
+      if (e.target === e.currentTarget) {
+        document.getElementById('summaryModal').classList.remove('active');
+      }
+    }
+
+    function closeSummaryModal() {
+      document.getElementById('summaryModal').classList.remove('active');
+    }
+
+    function exportCSV() {
+      if (!results.length) return;
+      const header = ['#', 'タイトル', 'URL', 'ステータス', '要約', '共有リンク', '時間(秒)'];
+      const rows = results.map((r, i) => [
+        i + 1,
+        `"${(r.title || '').replace(/"/g, '""')}"`,
+        r.url,
+        r.status === 'success' ? '成功' : '失敗',
+        `"${(r.summary || '').replace(/"/g, '""')}"`,
+        r.share_link || '',
+        r.time || '',
+      ]);
+      const csv = '\uFEFF' + [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `notebooklm_results_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function copyTable() {
+      if (!results.length) return;
+      const header = ['#', 'タイトル', 'URL', 'ステータス', '要約', '共有リンク', '時間(秒)'];
+      const rows = results.map((r, i) => [
+        i + 1,
+        r.title || '',
+        r.url,
+        r.status === 'success' ? '成功' : '失敗',
+        r.summary || '',
+        r.share_link || '',
+        r.time || '',
+      ]);
+      const tsv = [header.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+      navigator.clipboard.writeText(tsv).then(() => {
+        alert('クリップボードにコピーしました（スプレッドシートに貼り付けできます）');
+      });
+    }
+
+    // Keyboard shortcut
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('summaryModal').classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>

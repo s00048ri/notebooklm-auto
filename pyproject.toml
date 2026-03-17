@@ -1,0 +1,20 @@
+[project]
+name = "notebooklm-auto"
+version = "0.1.0"
+description = "YouTubeのURLリストからNotebookLMノートブックを自動作成し、要約と共有リンクを返すツール"
+requires-python = ">=3.10"
+dependencies = [
+    "notebooklm-py[browser]>=0.3.0",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.scripts]
+notebooklm-auto = "notebooklm_auto.main:cli_main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

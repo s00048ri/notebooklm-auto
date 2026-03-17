@@ -1,0 +1,19 @@
+# NotebookLM Auto - 設定ファイル
+
+# 要約プロンプト（--prompt フラグで上書き可能）
+summary_prompt: "この動画の要点を日本語で要約してください"
+
+# ソース処理タイムアウト（秒）
+source_timeout: 300
+
+# 同時処理数（レート制限回避のため低めに設定）
+max_concurrent: 2
+
+# 出力形式: json / csv / markdown
+output_format: csv
+
+# 出力ディレクトリ
+output_dir: ./output
+
+# リトライ回数
+max_retries: 3
