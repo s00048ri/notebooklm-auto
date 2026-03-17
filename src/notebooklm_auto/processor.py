@@ -75,8 +75,11 @@ async def process_single_url(
         chat_result = await client.chat.ask(nb.id, config.summary_prompt)
         result.summary = chat_result.answer
 
-        # 4. 共有リンク取得
-        result.share_link = f"https://notebooklm.google.com/notebook/{nb.id}"
+        # 4. 共有設定: "Anyone with a link" に設定
+        console.print(f"  [cyan]共有設定中...[/] Anyone with a link")
+        await client.sharing.set_public(nb.id, True)
+        share_status = await client.sharing.get_status(nb.id)
+        result.share_link = share_status.share_url or f"https://notebooklm.google.com/notebook/{nb.id}"
 
         result.status = "success"
         console.print(f"  [green]完了![/] {title}")
