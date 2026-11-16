@@ -156,10 +156,20 @@ notebooklm-auto/
 │   ├── templates/
 │   │   └── index.html     # Web UI template
 │   └── static/            # Static assets
+├── tests/                 # pytest suite (NotebookLM client is faked)
 ├── config.yaml            # Default configuration
 ├── pyproject.toml
 └── README.md
 ```
+
+## Running Tests
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+The tests replace the NotebookLM client and the YouTube title lookup with fakes, so they need no Google login or network access.
 
 ## Notes
 
@@ -270,6 +280,15 @@ Session Title,YouTube URL
 ```
 
 CSVに `Session Title` / `Title` / `Name` 列があればノートブック名に使用します。列がない場合はYouTube動画のタイトルを自動取得します。
+
+## テストの実行
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+NotebookLMクライアントとYouTubeタイトル取得はフェイクに差し替えているため、Googleへのログインやネットワーク接続なしで実行できます。
 
 ## 注意事項
 

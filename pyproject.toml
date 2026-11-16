@@ -9,6 +9,10 @@ dependencies = [
     "rich>=13.0",
 ]
 
+[project.optional-dependencies]
+web = ["flask>=3.0"]
+dev = ["flask>=3.0", "pytest>=8.0"]
+
 [project.scripts]
 notebooklm-auto = "notebooklm_auto.main:cli_main"
 
@@ -18,3 +22,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
