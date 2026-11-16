@@ -85,7 +85,19 @@ async def _run_job(job_id: str, entries: list[UrlEntry], config: Config) -> None
                         chat_result = await client.chat.ask(nb.id, config.summary_prompt)
                         result.summary = chat_result.answer
 
-                        result.share_link = f"https://notebooklm.google.com/notebook/{nb.id}"
+                        _send_event(job_id, "progress", {
+                            "index": index,
+                            "step": "sharing",
+                            "title": title,
+                        })
+
+                        # 共有設定: "Anyone with a link" に設定（CLIと同じ処理）
+                        await client.sharing.set_public(nb.id, True)
+                        share_status = await client.sharing.get_status(nb.id)
+                        result.share_link = (
+                            share_status.share_url
+                            or f"https://notebooklm.google.com/notebook/{nb.id}"
+                        )
                         result.status = "success"
 
                     except Exception as e:

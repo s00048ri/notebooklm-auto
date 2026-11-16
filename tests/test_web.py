@@ -192,9 +192,41 @@ def test_run_job_success(fake_notebooklm):
     assert events[-1]["data"] == {"total": 2, "successful": 2, "failed": 0}
     results = [e["data"] for e in events if e["event"] == "result"]
     assert {r["status"] for r in results} == {"success"}
-    assert all(r["share_link"] for r in results)
+    assert {r["share_link"] for r in results} == {
+        "https://notebooklm.google.com/notebook/nb-123?share=1"
+    }
     steps = [e["data"]["step"] for e in events if e["event"] == "progress" and e["data"]["index"] == 0]
-    assert steps == ["creating", "adding_source", "summarizing"]
+    assert steps == ["creating", "adding_source", "summarizing", "sharing"]
+    # 各ノートブックを "Anyone with a link" に設定していること
+    sharing = fake_notebooklm.client.sharing
+    assert sharing.set_public.await_count == 2
+    sharing.set_public.assert_awaited_with("nb-123", True)
+    assert sharing.get_status.await_count == 2
+
+
+def test_run_job_share_link_fallback(fake_notebooklm):
+    fake_notebooklm.client.sharing.get_status.return_value.share_url = None
+    web._jobs["j"] = queue.Queue()
+
+    asyncio.run(web._run_job("j", [UrlEntry("https://youtu.be/a", "A")], Config()))
+
+    result = next(e["data"] for e in _drain(web._jobs["j"]) if e["event"] == "result")
+    assert result["status"] == "success"
+    assert result["share_link"] == "https://notebooklm.google.com/notebook/nb-123"
+
+
+def test_run_job_sharing_failure_is_reported(fake_notebooklm):
+    fake_notebooklm.client.sharing.set_public.side_effect = PermissionError("sharing disabled")
+    web._jobs["j"] = queue.Queue()
+
+    asyncio.run(web._run_job("j", [UrlEntry("https://youtu.be/a", "A")], Config()))
+
+    events = _drain(web._jobs["j"])
+    result = next(e["data"] for e in events if e["event"] == "result")
+    assert result["status"] == "error"
+    assert result["error"] == "PermissionError: sharing disabled"
+    assert result["summary"] == "要約テキスト"  # 共有前までの結果は残る
+    assert events[-1]["data"]["failed"] == 1
 
 
 def test_run_job_item_error(fake_notebooklm):
