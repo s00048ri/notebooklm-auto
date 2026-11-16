@@ -6,7 +6,6 @@ import asyncio
 import json
 import queue
 import threading
-import time
 import uuid
 from pathlib import Path
 
@@ -14,7 +13,7 @@ from flask import Flask, Response, jsonify, render_template, request
 
 from .config import Config
 from .input_parser import UrlEntry, parse_csv, parse_txt, validate_youtube_url
-from .models import BatchResult, NotebookResult
+from .models import NotebookResult
 
 app = Flask(
     __name__,
@@ -34,82 +33,33 @@ def _send_event(job_id: str, event: str, data: dict) -> None:
 
 
 async def _run_job(job_id: str, entries: list[UrlEntry], config: Config) -> None:
-    """Run the NotebookLM processing and emit SSE events."""
-    from notebooklm import NotebookLMClient
+    """processor の共通処理を実行し、進捗をSSEイベントとして送る。"""
+    from .processor import process_all_urls
 
-    from .processor import extract_video_id, fetch_video_title
+    _send_event(job_id, "start", {"total": len(entries)})
 
-    batch = BatchResult()
-    total = len(entries)
+    def on_step(index: int, step: str, title: str) -> None:
+        _send_event(job_id, "progress", {
+            "index": index,
+            "step": step,
+            "title": title,
+            "url": entries[index].url,
+        })
 
-    _send_event(job_id, "start", {"total": total})
+    def on_result(index: int, result: NotebookResult) -> None:
+        _send_event(job_id, "result", {
+            "index": index,
+            "url": result.youtube_url,
+            "title": result.notebook_title,
+            "summary": result.summary,
+            "share_link": result.share_link,
+            "status": result.status,
+            "error": result.error_message or "",
+            "time": round(result.processing_time, 1),
+        })
 
     try:
-        async with await NotebookLMClient.from_storage() as client:
-            semaphore = asyncio.Semaphore(config.max_concurrent)
-
-            async def process_one(index: int, entry: UrlEntry) -> NotebookResult:
-                async with semaphore:
-                    result = NotebookResult(youtube_url=entry.url)
-                    start = time.time()
-
-                    try:
-                        video_id = extract_video_id(entry.url)
-                        title = entry.title if entry.title else await fetch_video_title(entry.url)
-
-                        _send_event(job_id, "progress", {
-                            "index": index,
-                            "step": "creating",
-                            "title": title,
-                            "url": entry.url,
-                        })
-
-                        nb = await client.notebooks.create(title)
-                        result.notebook_id = nb.id
-                        result.notebook_title = title
-
-                        _send_event(job_id, "progress", {
-                            "index": index,
-                            "step": "adding_source",
-                            "title": title,
-                        })
-
-                        await client.sources.add_url(nb.id, entry.url, wait=True)
-
-                        _send_event(job_id, "progress", {
-                            "index": index,
-                            "step": "summarizing",
-                            "title": title,
-                        })
-
-                        chat_result = await client.chat.ask(nb.id, config.summary_prompt)
-                        result.summary = chat_result.answer
-
-                        result.share_link = f"https://notebooklm.google.com/notebook/{nb.id}"
-                        result.status = "success"
-
-                    except Exception as e:
-                        result.status = "error"
-                        result.error_message = f"{type(e).__name__}: {e}"
-
-                    result.processing_time = time.time() - start
-
-                    _send_event(job_id, "result", {
-                        "index": index,
-                        "url": result.youtube_url,
-                        "title": result.notebook_title,
-                        "summary": result.summary,
-                        "share_link": result.share_link,
-                        "status": result.status,
-                        "error": result.error_message or "",
-                        "time": round(result.processing_time, 1),
-                    })
-
-                    return result
-
-            tasks = [process_one(i, entry) for i, entry in enumerate(entries)]
-            batch.results = await asyncio.gather(*tasks)
-
+        batch = await process_all_urls(entries, config, on_step=on_step, on_result=on_result)
     except Exception as e:
         _send_event(job_id, "error", {"message": f"{type(e).__name__}: {e}"})
         return
