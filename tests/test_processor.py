@@ -181,3 +181,63 @@ def test_process_all_urls_other_fatal_error(fake_notebooklm, capsys):
     out = capsys.readouterr().out
     assert "致命的エラー" in out
     assert "notebooklm login" not in out
+
+
+def test_process_single_url_reports_steps(fake_client):
+    steps = []
+
+    asyncio.run(
+        processor.process_single_url(
+            fake_client,
+            UrlEntry("https://youtu.be/abc", "T"),
+            Config(),
+            on_step=lambda step, title: steps.append((step, title)),
+        )
+    )
+
+    assert steps == [
+        ("creating", "T"),
+        ("adding_source", "T"),
+        ("summarizing", "T"),
+        ("sharing", "T"),
+    ]
+
+
+def test_process_single_url_stops_reporting_after_error(fake_client):
+    fake_client.chat.ask.side_effect = RuntimeError("chat failed")
+    steps = []
+
+    asyncio.run(
+        processor.process_single_url(
+            fake_client,
+            UrlEntry("https://youtu.be/abc", "T"),
+            Config(),
+            on_step=lambda step, title: steps.append(step),
+        )
+    )
+
+    assert steps == ["creating", "adding_source", "summarizing"]
+
+
+def test_process_all_urls_callbacks_carry_index(fake_notebooklm):
+    entries = [UrlEntry(f"https://youtu.be/v{i}", f"T{i}") for i in range(3)]
+    steps: list[tuple[int, str, str]] = []
+    results: dict[int, str] = {}
+
+    batch = asyncio.run(
+        processor.process_all_urls(
+            entries,
+            Config(max_concurrent=2),
+            on_step=lambda i, step, title: steps.append((i, step, title)),
+            on_result=lambda i, r: results.__setitem__(i, r.youtube_url),
+        )
+    )
+
+    assert results == {i: e.url for i, e in enumerate(entries)}
+    assert len(steps) == 3 * 4
+    for i in range(3):
+        assert [s for idx, s, _ in steps if idx == i] == [
+            "creating", "adding_source", "summarizing", "sharing"
+        ]
+        assert {t for idx, _, t in steps if idx == i} == {f"T{i}"}
+    assert batch.successful == 3

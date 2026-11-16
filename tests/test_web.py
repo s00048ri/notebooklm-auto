@@ -197,6 +197,11 @@ def test_run_job_success(fake_notebooklm):
     }
     steps = [e["data"]["step"] for e in events if e["event"] == "progress" and e["data"]["index"] == 0]
     assert steps == ["creating", "adding_source", "summarizing", "sharing"]
+    progress = [e["data"] for e in events if e["event"] == "progress"]
+    assert {(p["index"], p["url"]) for p in progress} == {
+        (0, "https://youtu.be/a"),
+        (1, "https://youtu.be/b"),
+    }
     # 各ノートブックを "Anyone with a link" に設定していること
     sharing = fake_notebooklm.client.sharing
     assert sharing.set_public.await_count == 2
